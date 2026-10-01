@@ -14,7 +14,7 @@ namespace {
 std::string Trim(std::string value) {
     //去掉字符串两端的空白,保留中间的内容;全部是空白时返回空字符串
     //你可以分别从两端找到第一个非空白字符,注意反向迭代器转回正向迭代器时的边界
-    throw std::runtime_error("Not implemented.");
+    
 }
 
 //判断是否为ASCII可打印字符,Tab由插入模式另外处理

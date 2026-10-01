@@ -65,34 +65,34 @@ bool Buffer::IsModified() const {
 
 void Buffer::InsertCharacter(std::size_t row, std::size_t column, char value) {
     //在第row行第col列插入一个value, 注意越界检查
-    if(row > GetLineCount()||row < 1) return;
-    if (column > lines_[row-1].size()+1||column < 1) return;
-    lines_[row-1].insert(lines_[row-1].begin()+column-1,value);
+    if(row >= GetLineCount()||row < 0) return;
+    if (column > lines_[row].size()||column < 0) return;
+    lines_[row].insert(lines_[row].begin()+column,value);
 }
 
 void Buffer::EraseCharacter(std::size_t row, std::size_t column) {
    //在第row行第col列删除一个value
-    if(row > GetLineCount()||row < 1) return;
-    if (column > lines_[row-1].size()||column < 1) return;
-    lines_[row-1].erase(lines_[row-1].begin()+column-1);
+    if(row >= GetLineCount()||row < 0) return;
+    if (column >= lines_[row].size()||column < 0) return;
+    lines_[row].erase(lines_[row].begin()+column);
 }
 
 void Buffer::SplitLine(std::size_t row, std::size_t column) {
     //在第row行第col列分割,即在此处敲了回车键
     //注：此处分割人为规定第col列不会留在原处
-    if(row > GetLineCount()||row < 1) return;
-    if (column > lines_[row-1].size()+1||column < 1) return;
-    std::string tail = lines_[row-1].substr(column-1);
-    lines_[row-1].erase(column-1);
-    lines_.insert(lines_.begin()+row, tail);
+    if(row >= GetLineCount()||row < 0) return;
+    if (column > lines_[row].size()||column < 0) return;
+    std::string tail = lines_[row].substr(column);
+    lines_[row].erase(column);
+    lines_.insert(lines_.begin()+row+1, tail);
 }
 
 void Buffer::JoinLine(std::size_t row) {
    //把第row + 1行合并进第row行
-    if(row > GetLineCount()-1||row < 1) return;
-    std::string tail = lines_[row];
-    lines_.erase(lines_.begin()+row);
-    lines_[row-1] = lines_[row-1]+tail;
+    if(row > GetLineCount()-2||row < 0) return;
+    std::string tail = lines_[row+1];
+    lines_.erase(lines_.begin()+row+1);
+    lines_[row] = lines_[row]+tail;
 }
 
 void Buffer::Save() {

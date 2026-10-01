@@ -16,6 +16,9 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
             case 'j':return GenerateMotion(Motion::Down);break;
             case 'k':return GenerateMotion(Motion::Up);break;
             case 'l':return GenerateMotion(Motion::Right);break;
+            case 'i':return GenerateCommand(ActionKind::InsertBefore);break;
+            case 'a':return GenerateCommand(ActionKind::InsertAfter);break;
+            case ':':return GenerateCommand(ActionKind::EnterCommandLine);
         default:
             break;
         }
