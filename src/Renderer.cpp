@@ -85,7 +85,6 @@ std::string Renderer::ExpandForDisplay(std::string_view line) {
     //从左到右扫描buffer中一整行的实际内容,并扩展到render应该输出的视图
     //你应该在Render中调用这个函数,并把函数返回的结果按照视口剪切用于Render的某些行
     size_t column{0};
-    const size_t tabStop = 4;
     std::string expanded; 
     for(auto &word : line){
         if(word == '\t'){
@@ -98,5 +97,6 @@ std::string Renderer::ExpandForDisplay(std::string_view line) {
             column++;
         }
     }
+    return expanded;
 }
 } // namespace sjtu

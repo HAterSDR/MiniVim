@@ -10,7 +10,7 @@ namespace sjtu {
 void Window::Resize(ScreenSize terminal_size) {
     //底部留一行给命令或提示,其余作为正文区域;正文行数和列数都至少取1
     //修改视口即可
-    viewport_.rows_ = std::max(1uL,terminal_size.rows_-1);
+    viewport_.rows_ = terminal_size.rows_ > 1 ? terminal_size.rows_ - 1:1;
     viewport_.columns_ = std::max(1uL,terminal_size.columns_);
 }   
 
@@ -76,7 +76,6 @@ void Window::SetCursor(const Buffer& buffer, Position position, bool allow_line_
     //3. 调整视口,保证光标可见
     size_t _row =  position.row_;
     if(_row >= buffer.GetLineCount()) _row = buffer.GetLineCount() - 1;
-    if(_row < 0) _row = 0;
     cursor_.row_ = _row;
     size_t rowlen = buffer.GetLineAt(_row).size();
     size_t max_col;
@@ -114,7 +113,13 @@ void Window::MoveUp(const Buffer& buffer, std::size_t count) {
     //先算目标行,最多到第一行,再将期望的显示列换算成目标行的字符下标
     //经过短行时不要更新desired_screen_column_,这样继续移动到长行时能回到原来的列
     size_t _row = (count > cursor_.row_)?0: cursor_.row_ - count;
-    size_t Desired_Col = RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_); 
+    if(buffer.GetLineAt(_row).size() == 0) {
+        cursor_.row_ = _row;
+        cursor_.column_ = 0;
+        return;
+    }
+    size_t Desired_Col = std::min(RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_), buffer.GetLineAt(_row).size() - 1);
+     
     cursor_.row_ = _row;
     cursor_.column_ = Desired_Col;
 
@@ -124,7 +129,12 @@ void Window::MoveDown(const Buffer& buffer, std::size_t count) {
     //先算目标行,最多到最后一行,再根据desired_screen_column_寻找目标字符
     //与向上移动一样,保留期望显示列
     size_t _row = std::min(cursor_.row_ + count ,buffer.GetLineCount() - 1);
-    size_t Desired_Col = RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_); 
+    if(buffer.GetLineAt(_row).size() == 0) {
+        cursor_.row_ = _row;
+        cursor_.column_ = 0;
+        return;
+    }
+    size_t Desired_Col = std::min(RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_),buffer.GetLineAt(_row).size() - 1); 
     cursor_.row_ = _row;
     cursor_.column_ = Desired_Col;
 }

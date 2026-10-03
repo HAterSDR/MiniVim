@@ -15,16 +15,16 @@ std::string Trim(std::string value) {
     //去掉字符串两端的空白,保留中间的内容;全部是空白时返回空字符串
     //你可以分别从两端找到第一个非空白字符,注意反向迭代器转回正向迭代器时的边界
     size_t start{0}, end{value.size() - 1};
-    for(start; start < value.size(); start++){
+    for(;start < value.size(); start++){
         if(value[start]==' '||value[start]=='\t') continue;
         else break;
     }
-    if(start = value.size()) return "";
-    for(end; end >= 0; end--){
-        if(value[start]==' '||value[start]=='\t') continue;
+    if(start == value.size()) return "";
+    for(;end > 0; end--){
+        if(value[end]==' '||value[end]=='\t') continue;
         else break;
     }
-    return value.substr(start,start - end + 1);
+    return value.substr(start,end - start + 1);
 }
 
 //判断是否为ASCII可打印字符,Tab由插入模式另外处理
@@ -45,7 +45,7 @@ void Editor::Run() {
 }
 
 //返回编辑器是否还需要继续运行
-bool Editor::IsRunning() const noexcept { return false; }
+bool Editor::IsRunning() const noexcept { return running_; }
 
 void Editor::RefreshScreen() {
     //1. 获取终端大小(GetScreenSize),更新窗口可显示的范围,并让光标落在可见区域内
@@ -102,6 +102,7 @@ void Editor::Execute(const EditorAction& action) {
     case ActionKind::EnterCommandLine:
         //进入Command Mode
         //记得清空当前的message之类的遗留状态
+        mode_ = Mode::CommandLine;
         message_ = "";
         command_ = "";
         return;
@@ -139,9 +140,15 @@ void Editor::HandleInsert(KeyEvent key) {
         }
         else {
             buffer_.EraseCharacter(cursor_.row_, cursor_.column_ - 1);
+            Position newcurosr_{cursor_.row_, cursor_.column_ - 1};
+            window_.SetCursor(buffer_, newcurosr_, true);
             return;
         }
-        
+    }
+    if(IsPrintable(key.value_)||key.value_ == '\t'){
+        Position newcursor_{cursor_.row_, cursor_.column_ + 1};
+        buffer_.InsertCharacter(cursor_.row_, cursor_.column_ , key.value_);
+        window_.SetCursor(buffer_, newcursor_, true);
     }
 }
 void Editor::EnterInsert(Position position) {
@@ -155,7 +162,7 @@ void Editor::LeaveInsert() {
     //从插入位置回到Normal模式的字符位置:不在行首时先左移一列,再限制光标范围
     mode_ = Mode::Normal;
     Position cursor_ = window_.GetCursor();
-    if(cursor_.row_ == 0) return;
+    if(cursor_.column_ == 0) return;
     Position newposition_{cursor_.row_,cursor_.column_ - 1};
     window_.SetCursor(buffer_, newposition_,false);
     return;
@@ -207,13 +214,15 @@ void Editor::ExecuteCommandLine() {
         running_ = false;
         return;
     }
+    message_ = TrueCommand;
+    return;
     //命令咋执行？？
 }
 
 void Editor::LeaveCommandLine() {
     //恢复Normal模式并清空正在输入的命令
     command_ = "";
-    mode_ == Mode::Normal;
+    mode_ = Mode::Normal;
 }
 
 
