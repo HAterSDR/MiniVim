@@ -10,8 +10,8 @@ namespace sjtu {
 void Window::Resize(ScreenSize terminal_size) {
     //底部留一行给命令或提示,其余作为正文区域;正文行数和列数都至少取1
     //修改视口即可
-    viewport_.rows_ = std::max(1uLL,terminal_size.rows_-1);
-    viewport_.columns_ = std::max(1uLL,terminal_size.columns_);
+    viewport_.rows_ = std::max(1uL,terminal_size.rows_-1);
+    viewport_.columns_ = std::max(1uL,terminal_size.columns_);
 }   
 
 void Window::ApplyMotion(const Buffer& buffer, Motion motion) {
@@ -34,7 +34,7 @@ void Window::ApplyMotion(const Buffer& buffer, Motion motion) {
         }
     }
     if(motion == Motion::Down) {
-        if(cursor_.column_ < buffer.GetLineCount()-1){
+        if(cursor_.row_ < buffer.GetLineCount()-1){
             MoveDown(buffer,1);
         }
     }
@@ -55,7 +55,7 @@ void Window::EnsureCursorVisible(const Buffer& buffer) {
         viewport_.left_ =  ScreenCol;
     }
     if(ScreenCol >= viewport_.left_ + viewport_.columns_){
-        viewport_.left_ = ScreenCol - viewport_.rows_ + 1;
+        viewport_.left_ = ScreenCol - viewport_.columns_ + 1;
     }
 }
 
@@ -74,31 +74,59 @@ void Window::SetCursor(const Buffer& buffer, Position position, bool allow_line_
     //1. 先限制行号,再根据该行长度和allow_line_end限制列号
     //2. 用新位置更新上下移动时的目标显示列
     //3. 调整视口,保证光标可见
-    throw std::runtime_error("Not implemented.");
+    size_t _row =  position.row_;
+    if(_row >= buffer.GetLineCount()) _row = buffer.GetLineCount() - 1;
+    if(_row < 0) _row = 0;
+    cursor_.row_ = _row;
+    size_t rowlen = buffer.GetLineAt(_row).size();
+    size_t max_col;
+    if(rowlen == 0) max_col = 0;
+    else{
+        if(allow_line_end) max_col = rowlen;
+        else max_col = rowlen - 1; 
+    }
+    if(position.column_ > max_col) cursor_.column_ = max_col;
+    else cursor_.column_ = position.column_;
+    desired_column_ = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_); 
+    EnsureCursorVisible(buffer);
 }
 
 
 void Window::MoveLeft(const Buffer& buffer, std::size_t count) {
     //向左移动count个字符,最多到行首,并更新目标显示列
-    throw std::runtime_error("Not implemented.");
+    cursor_.column_ = (count > cursor_.column_)?0:cursor_.column_ - count;
+    desired_column_ = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_);
 }
 
 void Window::MoveRight(const Buffer& buffer, std::size_t count) {
     //向右移动count个字符,最多到最后一个字符,并更新目标显示列
-    throw std::runtime_error("Not implemented.");
+    const std::string &line = buffer.GetLineAt(cursor_.row_);
+    if(line.empty()) cursor_.column_ = 0;
+    else{
+        size_t max_col = line.size() - 1;
+        cursor_.column_ = std::min(max_col, cursor_.column_ + count);
+    }
+    desired_column_ = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_);
 }
 
 
 void Window::MoveUp(const Buffer& buffer, std::size_t count) {
     //先算目标行,最多到第一行,再将期望的显示列换算成目标行的字符下标
     //经过短行时不要更新desired_screen_column_,这样继续移动到长行时能回到原来的列
-    throw std::runtime_error("Not implemented.");
+    size_t _row = (count > cursor_.row_)?0: cursor_.row_ - count;
+    size_t Desired_Col = RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_); 
+    cursor_.row_ = _row;
+    cursor_.column_ = Desired_Col;
+
 }
 
 void Window::MoveDown(const Buffer& buffer, std::size_t count) {
     //先算目标行,最多到最后一行,再根据desired_screen_column_寻找目标字符
     //与向上移动一样,保留期望显示列
-    throw std::runtime_error("Not implemented.");
+    size_t _row = std::min(cursor_.row_ + count ,buffer.GetLineCount() - 1);
+    size_t Desired_Col = RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_); 
+    cursor_.row_ = _row;
+    cursor_.column_ = Desired_Col;
 }
 
 } // namespace sjtu

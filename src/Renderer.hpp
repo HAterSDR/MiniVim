@@ -18,7 +18,7 @@ struct RenderState {
     //绘制底部一行所需的状态,command_不包含冒号,message_保存提示或错误信息
     Mode mode_{Mode::Normal};
     std::string command_;
-    std::string message_;
+    std::string message_{"MewMewMew"};
 };
 
 class Renderer {

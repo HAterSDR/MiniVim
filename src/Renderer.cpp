@@ -40,24 +40,40 @@ std::string Renderer::Render(const Buffer& buffer, const Window& window, const R
     frame += "\x1b[H";
 
     for (std::size_t screen_row = 0; screen_row < viewport.rows_; ++screen_row) {
-       //这里是提示2中的部分
+        if(screen_row + viewport.top_ < buffer.GetLineCount()){
+            const std::string &new_line = buffer.GetLineAt(screen_row + viewport.top_);
+            std::string ScreenLine = ExpandForDisplay(new_line);
+            std::string visible;
+            if(ScreenLine.size() > viewport.left_) visible = ScreenLine.substr(viewport.left_, viewport.columns_);
+            AppendClearedLine(frame, visible, width, true);
+        }
+        else{
+            AppendClearedLine(frame, "~", width,true);
+        }
     }
 
     std::string bottom;
-    //if (state.mode_ == Mode::CommandLine) {
-        //bottom = ":" + state.command_;
-    //} else if (!state.message_.empty()) {
-        //bottom = state.message_;
-    //} else if (state.mode_ == Mode::Insert) {
-        //bottom = "-- INSERT --";
-    //}
-    //AppendClearedLine(frame, bottom, width, false);
+    if (state.mode_ == Mode::CommandLine) {
+        bottom = ":" + state.command_;
+    } else if (!state.message_.empty()) {
+        bottom = state.message_;
+    } else if (state.mode_ == Mode::Insert) {
+        bottom = "-- INSERT --";
+    }
+    AppendClearedLine(frame, bottom, width, false);
     //这里是提示3中的部分
     //我们只会在CommandMode的时候检查一下底部的命令内容,在NormalMode不会看底部,所以message你可以随意写
 
     std::size_t cursor_row{0};
     std::size_t cursor_column{0};
-
+    if(state.mode_ == Mode::CommandLine){
+        cursor_row = viewport.rows_ + 1;
+        cursor_column = state.command_.size() + 2;
+    }else{
+        const Position& cursor_ = window.GetCursor();
+        cursor_row = cursor_.row_ - viewport.top_ + 1;
+        cursor_column = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_) - viewport.left_ + 1; 
+    }
     //计算cursor_row和cursor_column即可    
 
     frame += CursorSequence(cursor_row, cursor_column);
@@ -68,6 +84,19 @@ std::string Renderer::Render(const Buffer& buffer, const Window& window, const R
 std::string Renderer::ExpandForDisplay(std::string_view line) {
     //从左到右扫描buffer中一整行的实际内容,并扩展到render应该输出的视图
     //你应该在Render中调用这个函数,并把函数返回的结果按照视口剪切用于Render的某些行
-    return {};
+    size_t column{0};
+    const size_t tabStop = 4;
+    std::string expanded; 
+    for(auto &word : line){
+        if(word == '\t'){
+            size_t next = NextScreenColumn(column, word);
+            for(int i = 0; i < next - column; i++) expanded.append(" "); 
+            column = next;
+        }
+        else {
+            expanded += word;
+            column++;
+        }
+    }
 }
 } // namespace sjtu

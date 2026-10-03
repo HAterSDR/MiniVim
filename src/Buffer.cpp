@@ -40,7 +40,7 @@ std::size_t Buffer::GetLineCount() const {
 
 const std::string& Buffer::GetLineAt(std::size_t row) const {
     //返回第row行的内容
-    return lines_[row-1];
+    return lines_[row];
 }
 
 
@@ -54,55 +54,55 @@ std::string Buffer::GetDisplayName() const {
 bool Buffer::IsModified() const {
     //返回文件和上次保存比起来是否被修改过
     //未处理文件被删除情况
-    std::ifstream buffer(path_);
-    std::string line;
-    std::vector<std::string> nowlines_;
-    if(buffer.peek() == std::char_traits<char>::eof()) nowlines_.push_back("");
-    else while(std::getline(buffer,line)) nowlines_.push_back(line);
-    if(nowlines_ == lines_) return false;
-    return true;
+    return modified_;
 }
 
 void Buffer::InsertCharacter(std::size_t row, std::size_t column, char value) {
     //在第row行第col列插入一个value, 注意越界检查
-    if(row >= GetLineCount()||row < 0) return;
-    if (column > lines_[row].size()||column < 0) return;
+    if(row >= GetLineCount()) return;
+    if (column > lines_[row].size()) return;
     lines_[row].insert(lines_[row].begin()+column,value);
+    modified_ = true;
 }
 
 void Buffer::EraseCharacter(std::size_t row, std::size_t column) {
    //在第row行第col列删除一个value
-    if(row >= GetLineCount()||row < 0) return;
-    if (column >= lines_[row].size()||column < 0) return;
+    if(row >= GetLineCount()) return;
+    if (column >= lines_[row].size()) return;
     lines_[row].erase(lines_[row].begin()+column);
+    modified_ = true;
 }
 
 void Buffer::SplitLine(std::size_t row, std::size_t column) {
     //在第row行第col列分割,即在此处敲了回车键
     //注：此处分割人为规定第col列不会留在原处
-    if(row >= GetLineCount()||row < 0) return;
+    if(row >= GetLineCount()) return;
     if (column > lines_[row].size()||column < 0) return;
     std::string tail = lines_[row].substr(column);
     lines_[row].erase(column);
     lines_.insert(lines_.begin()+row+1, tail);
+    modified_ = true;
 }
 
 void Buffer::JoinLine(std::size_t row) {
    //把第row + 1行合并进第row行
-    if(row > GetLineCount()-2||row < 0) return;
+    if(row+2 > GetLineCount()) return;
     std::string tail = lines_[row+1];
     lines_.erase(lines_.begin()+row+1);
     lines_[row] = lines_[row]+tail;
+    modified_ = true;
 }
 
 void Buffer::Save() {
    //把文件内容保存, 直接调用WriteTo方法
     WriteTo(path_);
+    modified_ = false;
 }
 
 void Buffer::SaveAs(const std::filesystem::path& path) {
     path_ = path;
     WriteTo(path);
+    modified_ = false;
 }
 
 
@@ -110,9 +110,9 @@ void Buffer::WriteTo(const std::filesystem::path& path) const {
    //实际将缓冲区中的内容写入path指向的文件中
     std::ofstream output(path);
     for (size_t i = 0; i < lines_.size(); ++i) {
-        if (i > 0) output << '\n';
-        output << lines_[i];
+        output << lines_[i] <<'\n';
     }
+    output.close();
 }
 
 } // namespace sjtu
