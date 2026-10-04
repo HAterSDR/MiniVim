@@ -21,6 +21,7 @@ enum class ActionKind {
     InsertBefore,
     InsertAfter,
     EnterCommandLine,
+    Delete,
     //在Advanced部分中你很可能需要添加别的ActionKind
 };
 

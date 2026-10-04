@@ -106,6 +106,13 @@ void Editor::Execute(const EditorAction& action) {
         message_ = "";
         command_ = "";
         return;
+    case ActionKind::Delete:
+    //删除当前字符
+    Position cursor_ = window_.GetCursor();
+    buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
+    window_.SetCursor(buffer_,cursor_,false);
+    return;
+
     }
 }
 

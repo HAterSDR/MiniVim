@@ -139,4 +139,5 @@ void Window::MoveDown(const Buffer& buffer, std::size_t count) {
     cursor_.column_ = Desired_Col;
 }
 
+
 } // namespace sjtu

@@ -19,6 +19,8 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
             case 'i':return GenerateCommand(ActionKind::InsertBefore);break;
             case 'a':return GenerateCommand(ActionKind::InsertAfter);break;
             case ':':return GenerateCommand(ActionKind::EnterCommandLine);
+            case 'x':return GenerateCommand(ActionKind::Delete);break;
+            case 'X':return GenerateCommand(ActionKind::Delete);break;
         default:
             break;
         }

@@ -25,6 +25,7 @@ public:
     void SetCursor(const Buffer& buffer, Position position, bool allow_line_end);
     const Position& GetCursor() const ;
     const Viewport& GetViewport() const ;
+    void DeleteCharacter(const Buffer& buffer);
 
 private:
     void MoveLeft(const Buffer& buffer, size_t count);
