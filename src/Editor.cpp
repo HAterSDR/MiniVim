@@ -106,14 +106,35 @@ void Editor::Execute(const EditorAction& action) {
         message_ = "";
         command_ = "";
         return;
-    case ActionKind::Delete:
-    //删除当前字符
-    Position cursor_ = window_.GetCursor();
-    buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
-    window_.SetCursor(buffer_,cursor_,false);
-    return;
-
+    case ActionKind::Delete:{
+        Position cursor_ = window_.GetCursor();
+        buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
+        window_.SetCursor(buffer_,cursor_,false);
+        return;
     }
+    //删除当前字符
+        
+    case ActionKind::JumpToLineStart:
+        window_.ApplyMotion(buffer_,Motion::Up,buffer_.GetLineCount());
+        return;
+    case ActionKind::JumpToLineEnd:
+        window_.ApplyMotion(buffer_,Motion::Down,buffer_.GetLineCount());
+        return;
+    case ActionKind::JumpToColStart:{
+        Position cursor_ = window_.GetCursor();
+        window_.ApplyMotion(buffer_,Motion::Left,buffer_.GetLineAt(cursor_.row_).size());
+        return;
+    }
+        
+    case ActionKind::JumpToColEnd:{
+        Position cursor_ = window_.GetCursor();
+        window_.ApplyMotion(buffer_,Motion::Right,buffer_.GetLineAt(cursor_.row_).size());
+        return;
+    }
+        
+    }
+    
+    
 }
 
 //Insert模式下Editor对于KeyEvent的处理.

@@ -17,15 +17,14 @@ class Window {
 public:
     void Resize(ScreenSize terminal_size);
 
-    void ApplyMotion(const Buffer& buffer, Motion motion);
-
+    void ApplyMotion(const Buffer& buffer, Motion motion,size_t count = 1);
     void EnsureCursorVisible(const Buffer& buffer);
 
     //allow_line_end为true时允许停在最后一个字符之后,供插入模式使用
     void SetCursor(const Buffer& buffer, Position position, bool allow_line_end);
     const Position& GetCursor() const ;
     const Viewport& GetViewport() const ;
-    void DeleteCharacter(const Buffer& buffer);
+    void NotWhitespace(const Buffer& buffer);
 
 private:
     void MoveLeft(const Buffer& buffer, size_t count);

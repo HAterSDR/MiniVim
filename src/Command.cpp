@@ -7,10 +7,17 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
     if (key.code_ == KeyCode::Escape) {
         return {};
     }
-
-
+    
     if (key.code_ == KeyCode::Character) {
         auto value = key.value_;
+        if(pending_){
+            if(pending_.value()=='g'){
+            switch(value){
+                case 'g':return GenerateCommand(ActionKind::JumpToLineStart);break;
+            }
+        }
+        }
+        
         switch (value) {
             case 'h':return GenerateMotion(Motion::Left);break;
             case 'j':return GenerateMotion(Motion::Down);break;
@@ -21,6 +28,11 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
             case ':':return GenerateCommand(ActionKind::EnterCommandLine);
             case 'x':return GenerateCommand(ActionKind::Delete);break;
             case 'X':return GenerateCommand(ActionKind::Delete);break;
+            case 'G':return GenerateCommand(ActionKind::JumpToLineEnd);break;
+            case 'g':pending_='g';break;
+            case '0':return GenerateCommand(ActionKind::JumpToColStart);break;
+            case '$':return GenerateCommand(ActionKind::JumpToColEnd);break;
+            //case '^':return;
         default:
             break;
         }
@@ -53,5 +65,7 @@ EditorAction NormalModeParser::GenerateMotion(Motion motion) {
 EditorAction NormalModeParser::GenerateCommand(ActionKind kind) {
     return {kind, std::nullopt};
 }
-
+EditorAction NormalModeParser::GenerateSpecialMotion(ActionKind kind){
+    return {};
+}
 } // namespace sjtu

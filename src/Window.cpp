@@ -14,28 +14,28 @@ void Window::Resize(ScreenSize terminal_size) {
     viewport_.columns_ = std::max(1uL,terminal_size.columns_);
 }   
 
-void Window::ApplyMotion(const Buffer& buffer, Motion motion) {
+void Window::ApplyMotion(const Buffer& buffer, Motion motion,size_t count) {
     //1. 根据方向调用对应的移动函数,Basic中每次移动一步,在Advanced中你可以改变count/添加别的case
     //2. 将行列限制在Normal模式的合法范围内(Buffer应始终至少有一行)
     //3. 调整视口,让移动后的光标可见(EnsureCursorVisible)
     if(motion == Motion::Left) {
         if(cursor_.column_ > 0){
-            MoveLeft(buffer,1);
+            MoveLeft(buffer,count);
         }
     }
     if(motion == Motion::Right) {
         if(cursor_.column_ < buffer.GetLineAt(cursor_.row_).size()-1){
-            MoveRight(buffer,1);
+            MoveRight(buffer,count);
         }
     }
     if(motion == Motion::Up) {
         if(cursor_.row_ > 0){
-            MoveUp(buffer,1);
+            MoveUp(buffer,count);
         }
     }
     if(motion == Motion::Down) {
         if(cursor_.row_ < buffer.GetLineCount()-1){
-            MoveDown(buffer,1);
+            MoveDown(buffer,count);
         }
     }
     EnsureCursorVisible(buffer);
@@ -89,7 +89,13 @@ void Window::SetCursor(const Buffer& buffer, Position position, bool allow_line_
     desired_column_ = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_); 
     EnsureCursorVisible(buffer);
 }
-
+void Window::NotWhitespace(const Buffer& buffer){
+    size_t &row = cursor_.row_;
+    size_t &column = cursor_.column_;
+    for(;column < buffer.GetLineAt(row).size(); column++){
+        if(buffer.GetLineAt(row)[column]!=' '||buffer.GetLineAt(row)[column]!='\t') break;
+    }
+}
 
 void Window::MoveLeft(const Buffer& buffer, std::size_t count) {
     //向左移动count个字符,最多到行首,并更新目标显示列

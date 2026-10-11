@@ -22,6 +22,11 @@ enum class ActionKind {
     InsertAfter,
     EnterCommandLine,
     Delete,
+    JumpToLineStart,
+    JumpToLineEnd,
+    JumpToColStart,
+    JumpToColEnd,
+    JumpToRealStart,
     //在Advanced部分中你很可能需要添加别的ActionKind
 };
 
@@ -46,9 +51,10 @@ public:
 private:
 //两个辅助函数,从motion/actionkind直接生成对应editoraction,只对某些简单的情形生效.比如h,我们可以根据motion直接得到editoraction为{ActionKind::Move, Motion::h};
 //这两个接口相当局限,在Advanced中你完全可以不管这两个接口,自己创建更方便的函数来辅助Feed函数
+    std::optional<char> pending_;
     EditorAction GenerateMotion(Motion motion);
     EditorAction GenerateCommand(ActionKind kind);
-
+    EditorAction GenerateSpecialMotion(ActionKind kind);
 };
 
 } // namespace sjtu
