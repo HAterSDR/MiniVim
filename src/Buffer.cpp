@@ -95,7 +95,9 @@ void Buffer::JoinLine(std::size_t row) {
     lines_[row] = lines_[row]+tail;
     modified_ = true;
 }
-
+void Find(std::size_t row,std::size_t column, bool IsBlank){
+    //寻找从col开始的第一个空白或非空白字符
+}
 void Buffer::Save() {
    //把文件内容保存, 直接调用WriteTo方法
     WriteTo(path_);

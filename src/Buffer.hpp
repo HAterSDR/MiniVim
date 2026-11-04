@@ -26,6 +26,7 @@ public:
     void EraseCharacter(std::size_t row, std::size_t column);
     void SplitLine(std::size_t row, std::size_t column);
     void JoinLine(std::size_t row);
+    void Find(std::size_t row,std::size_t column, bool IsBlank);
     void Save();
     void SaveAs(const std::filesystem::path& path);
 

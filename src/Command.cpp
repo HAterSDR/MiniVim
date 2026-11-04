@@ -4,7 +4,11 @@ namespace sjtu {
 
 EditorAction NormalModeParser::Feed(KeyEvent key) {
     //根据传入的key生成Action,在Basic部分中你应该直接调用GenerateMotion
+    //注意清空当前状态
+    //注意一万个边界
+    //注意把pending放在开头判断
     if (key.code_ == KeyCode::Escape) {
+        ResetState();
         return {};
     }
     
@@ -13,25 +17,81 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
         if(pending_){
             if(pending_.value()=='g'){
             switch(value){
-                case 'g':return GenerateCommand(ActionKind::JumpToLineStart);break;
+                case 'g':return GenerateCommand(ActionKind::JumpToLineStart);ResetState();break;
+                default:break;
             }
         }
         }
-        
+        if(value>='0' && value<='9'){
+            size_t digit = value - '0';
+            if(digit == 0 && pending_count == 0) return GenerateCommand(ActionKind::JumpToColStart);
+            else{
+                pending_count = pending_count*10 + digit;
+                count = pending_count;
+            }
+        };
         switch (value) {
-            case 'h':return GenerateMotion(Motion::Left);break;
-            case 'j':return GenerateMotion(Motion::Down);break;
-            case 'k':return GenerateMotion(Motion::Up);break;
-            case 'l':return GenerateMotion(Motion::Right);break;
-            case 'i':return GenerateCommand(ActionKind::InsertBefore);break;
-            case 'a':return GenerateCommand(ActionKind::InsertAfter);break;
-            case ':':return GenerateCommand(ActionKind::EnterCommandLine);
-            case 'x':return GenerateCommand(ActionKind::Delete);break;
-            case 'X':return GenerateCommand(ActionKind::Delete);break;
-            case 'G':return GenerateCommand(ActionKind::JumpToLineEnd);break;
+            case 'h':{
+                auto action = GenerateMotion(Motion::Left,count);
+                ResetState();
+                return action;
+            }
+            case 'j':{
+                auto action = GenerateMotion(Motion::Down,count);
+                ResetState();
+                return action;
+            }
+            case 'k':{
+                auto action = GenerateMotion(Motion::Up,count);
+                ResetState();
+                return action;
+            }
+            case 'l':{
+                auto action = GenerateMotion(Motion::Right,count);
+                ResetState();
+                return action;
+            }
+            case 'i':{
+                auto action = GenerateCommand(ActionKind::InsertBefore);
+                ResetState();
+                return action;
+            }
+            case 'a':{
+                auto action = GenerateCommand(ActionKind::InsertAfter);
+                ResetState();
+                return action;
+            }
+            case ':':{
+                auto action = GenerateCommand(ActionKind::EnterCommandLine);
+                ResetState();
+                return action;
+            }
+            case 'x':{
+                auto action = GenerateCommand(ActionKind::Delete,count);
+                ResetState();
+                return action;
+            }
+            case 'X':{
+                auto action = GenerateCommand(ActionKind::Delete,count);
+                ResetState();
+                return action;
+            }//to do
+            case 'G':{
+                auto action = GenerateCommand(ActionKind::JumpToLineEnd,pending_count);
+                ResetState();
+                return action;
+            }
             case 'g':pending_='g';break;
-            case '0':return GenerateCommand(ActionKind::JumpToColStart);break;
-            case '$':return GenerateCommand(ActionKind::JumpToColEnd);break;
+            case '0':{
+                auto action = GenerateCommand(ActionKind::JumpToColStart,pending_count);
+                ResetState();
+                return action;
+            }
+            case '$':{
+                auto action = GenerateCommand(ActionKind::JumpToColEnd,pending_count);
+                ResetState();
+                return action;
+            }
             //case '^':return;
         default:
             break;
@@ -58,14 +118,20 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
 }
 
 
-EditorAction NormalModeParser::GenerateMotion(Motion motion) {
-    return {ActionKind::Move, motion};
+EditorAction NormalModeParser::GenerateMotion(Motion motion, size_t count ) {
+    return {ActionKind::Move, motion, std::optional<Count>(Count {count})};
 }
 
-EditorAction NormalModeParser::GenerateCommand(ActionKind kind) {
-    return {kind, std::nullopt};
+EditorAction NormalModeParser::GenerateCommand(ActionKind kind, size_t count ) {
+    return {kind, std::nullopt,std::optional<Count>(Count {count})};
 }
 EditorAction NormalModeParser::GenerateSpecialMotion(ActionKind kind){
     return {};
+}
+void NormalModeParser::ResetState() {
+    count = 1;
+    pending_count = 0;
+    pending_ = std::nullopt;
+    // 清空其他所有待定前缀
 }
 } // namespace sjtu

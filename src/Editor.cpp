@@ -82,7 +82,7 @@ void Editor::Execute(const EditorAction& action) {
     case ActionKind::None:
         return;
     case ActionKind::Move:
-        window_.ApplyMotion(buffer_,*(action.motion_));
+        window_.ApplyMotion(buffer_,*(action.motion_), action.count_->count);
         return;
     case ActionKind::InsertBefore:
         //进入InsertMode,Editor自己就有对应方法
@@ -108,16 +108,28 @@ void Editor::Execute(const EditorAction& action) {
         return;
     case ActionKind::Delete:{
         Position cursor_ = window_.GetCursor();
-        buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
+        for(size_t i = 0; i < action.count_->count;i++){
+            buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
+        }
         window_.SetCursor(buffer_,cursor_,false);
         return;
     }
     //删除当前字符
         
     case ActionKind::JumpToLineStart:
+        if(action.count_->count > 0) {
+            Position new_cursor{action.count_->count - 1,window_.GetCursor().column_, };
+            window_.SetCursor(buffer_, new_cursor,false);
+            return;
+        }
         window_.ApplyMotion(buffer_,Motion::Up,buffer_.GetLineCount());
         return;
     case ActionKind::JumpToLineEnd:
+        if(action.count_->count > 0) {
+            Position new_cursor{action.count_->count - 1,window_.GetCursor().column_};
+            window_.SetCursor(buffer_, new_cursor,false);
+            return;
+        }
         window_.ApplyMotion(buffer_,Motion::Down,buffer_.GetLineCount());
         return;
     case ActionKind::JumpToColStart:{
@@ -128,6 +140,10 @@ void Editor::Execute(const EditorAction& action) {
         
     case ActionKind::JumpToColEnd:{
         Position cursor_ = window_.GetCursor();
+        if(action.count_->count >= 2 && cursor_.row_ == buffer_.GetLineCount()-1){
+            return;
+        }
+        if(action.count_->count > 0) window_.ApplyMotion(buffer_,Motion::Down, action.count_->count - 1);  
         window_.ApplyMotion(buffer_,Motion::Right,buffer_.GetLineAt(cursor_.row_).size());
         return;
     }
