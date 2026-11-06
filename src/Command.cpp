@@ -52,12 +52,32 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
                 return action;
             }
             case 'i':{
-                auto action = GenerateCommand(ActionKind::InsertBefore);
+                auto action = GenerateCommand(ActionKind::InsertBefore,count);
+                ResetState();
+                return action;
+            }
+            case 'I':{
+                auto action = GenerateCommand(ActionKind::InsertStart,count);
                 ResetState();
                 return action;
             }
             case 'a':{
-                auto action = GenerateCommand(ActionKind::InsertAfter);
+                auto action = GenerateCommand(ActionKind::InsertAfter,count);
+                ResetState();
+                return action;
+            }
+            case 'A':{
+                auto action = GenerateCommand(ActionKind::InsertLast,count);
+                ResetState();
+                return action;
+            }
+            case 'o':{
+                auto action = GenerateCommand(ActionKind::OpenNext,count);
+                ResetState();
+                return action;
+            }
+            case 'O':{
+                auto action = GenerateCommand(ActionKind::OpenPrev,count);
                 ResetState();
                 return action;
             }
@@ -72,10 +92,10 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
                 return action;
             }
             case 'X':{
-                auto action = GenerateCommand(ActionKind::Delete,count);
+                auto action = GenerateCommand(ActionKind::DeleteBefore,count);
                 ResetState();
                 return action;
-            }//to do
+            }
             case 'G':{
                 auto action = GenerateCommand(ActionKind::JumpToLineEnd,pending_count);
                 ResetState();
@@ -92,7 +112,16 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
                 ResetState();
                 return action;
             }
-            //case '^':return;
+            case '^':{
+                auto action = GenerateCommand(ActionKind::JumpToRealStart);
+                ResetState();
+                return action;
+            };
+            case 'r':{
+
+            }
+            //TODO: 今天得完成i, I, a, A, o, O,r;
+            //力竭了只做了前六个
         default:
             break;
         }

@@ -37,11 +37,11 @@ private:
 
     //ProcessKey的下属函数之一,Editor对NormalMode下的Action的执行,这个action是从parser传进来的
     void Execute(const EditorAction& action);
-
+    void MultipleExecute(size_t count);
     //ProcessKey的下属函数之一,Editor在InsertMode下对于KeyEvent的处理逻辑
     //FAQ:为啥InsertMode和CommandMode的处理直接属于Editor.hpp/cpp,而NormalMode则分出去一个单独的文件(Command.hpp/cpp)?
     //NormalMode的命令解析部分比较复杂所以我们单独解析,而这两部分逻辑需要Editor直接统筹全局其他模块且比较简明
-    void EnterInsert(Position position);
+    void EnterInsert(Position position,size_t count);
     void LeaveInsert();
     void HandleInsert(KeyEvent key);
 
@@ -62,6 +62,11 @@ private:
     std::string command_; //命令行模式下已经输入的内容,不含开头的冒号
     std::string message_; //底部的提示或错误信息
     bool running_{true}; //设为false后结束主循环
+    bool isRecording = false;
+    bool isReplaying = false;
+    ActionKind InsertMode;
+    size_t Replay_Count = 1;
+    std::vector<KeyEvent>recorded_action{};
 };
 
 } // namespace sjtu

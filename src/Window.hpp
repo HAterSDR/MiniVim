@@ -21,7 +21,7 @@ public:
     void EnsureCursorVisible(const Buffer& buffer);
 
     //allow_line_end为true时允许停在最后一个字符之后,供插入模式使用
-    void SetCursor(const Buffer& buffer, Position position, bool allow_line_end);
+    void SetCursor(const Buffer& buffer, Position position, bool allow_line_end, bool auto_scrolling = true);
     const Position& GetCursor() const ;
     const Viewport& GetViewport() const ;
     void NotWhitespace(const Buffer& buffer);

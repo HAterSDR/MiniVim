@@ -70,7 +70,7 @@ const Viewport& Window::GetViewport() const {
 }
 
 
-void Window::SetCursor(const Buffer& buffer, Position position, bool allow_line_end) {
+void Window::SetCursor(const Buffer& buffer, Position position, bool allow_line_end, bool auto_scrolling) {
     //1. 先限制行号,再根据该行长度和allow_line_end限制列号
     //2. 用新位置更新上下移动时的目标显示列
     //3. 调整视口,保证光标可见
@@ -87,7 +87,7 @@ void Window::SetCursor(const Buffer& buffer, Position position, bool allow_line_
     if(position.column_ > max_col) cursor_.column_ = max_col;
     else cursor_.column_ = position.column_;
     desired_column_ = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_); 
-    EnsureCursorVisible(buffer);
+    if(auto_scrolling) EnsureCursorVisible(buffer);
 }
 void Window::NotWhitespace(const Buffer& buffer){
     size_t &row = cursor_.row_;

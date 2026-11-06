@@ -20,13 +20,13 @@ public:
     std::size_t GetLineCount() const;
     const std::string& GetLineAt(std::size_t row) const;
     std::string GetDisplayName() const;
+    size_t Find(std::size_t row,std::size_t column, bool IsBlank);
     bool IsModified() const ;
 
     void InsertCharacter(std::size_t row, std::size_t column, char value);
     void EraseCharacter(std::size_t row, std::size_t column);
     void SplitLine(std::size_t row, std::size_t column);
     void JoinLine(std::size_t row);
-    void Find(std::size_t row,std::size_t column, bool IsBlank);
     void Save();
     void SaveAs(const std::filesystem::path& path);
 

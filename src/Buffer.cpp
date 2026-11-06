@@ -95,8 +95,22 @@ void Buffer::JoinLine(std::size_t row) {
     lines_[row] = lines_[row]+tail;
     modified_ = true;
 }
-void Find(std::size_t row,std::size_t column, bool IsBlank){
-    //寻找从col开始的第一个空白或非空白字符
+size_t Buffer::Find(std::size_t row,std::size_t column, bool IsBlank){
+    //寻找从row的col开始的第一个空白或非空白字符的列号，空行统一返回0
+    if(GetLineAt(row).empty()) return 0; 
+    if(column >= GetLineAt(row).size()) return GetLineAt(row).size();
+    size_t first = column;
+    if(IsBlank){
+        for(;first < GetLineAt(row).size();first++){
+            if(std::isspace(GetLineAt(row)[first])) break;
+        }
+    }
+    else{
+        for(;first < GetLineAt(row).size();first++){
+            if(!std::isspace(GetLineAt(row)[first])) break;
+        }
+    }
+    return first;
 }
 void Buffer::Save() {
    //把文件内容保存, 直接调用WriteTo方法

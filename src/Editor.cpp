@@ -84,19 +84,59 @@ void Editor::Execute(const EditorAction& action) {
     case ActionKind::Move:
         window_.ApplyMotion(buffer_,*(action.motion_), action.count_->count);
         return;
-    case ActionKind::InsertBefore:
+    case ActionKind::InsertBefore:{
         //进入InsertMode,Editor自己就有对应方法
-        EnterInsert(window_.GetCursor());
+        InsertMode = action.kind_;
+        if(action.count_->count > 1) isRecording = true;
+        EnterInsert(window_.GetCursor(),action.count_->count);
         return;
+    }
     case ActionKind::InsertAfter: {
         //从当前Char之后进入InsertMode
         //特判:如果Buffer表示当前Cursor所在的行是空的怎么办?
+        InsertMode = action.kind_;
+        if(action.count_->count > 1) isRecording = true;
         Position cursor_ = window_.GetCursor();
-        if(buffer_.GetLineAt(cursor_.row_).size() == 0) EnterInsert(cursor_);
+        if(buffer_.GetLineAt(cursor_.row_).size() == 0) EnterInsert(cursor_,action.count_->count);
         else{
             cursor_.column_++;
-            EnterInsert(cursor_);
+            EnterInsert(cursor_, action.count_->count);
         }
+        return;
+    }
+    case ActionKind::InsertStart:{
+        InsertMode = action.kind_;
+        if(action.count_->count > 1) isRecording = true;
+        Position cursor_ = window_.GetCursor();
+        cursor_.column_ = 0;
+        EnterInsert(cursor_,action.count_->count);
+        return;
+    }
+    case ActionKind::InsertLast:{
+        InsertMode = action.kind_;
+        if(action.count_->count > 1) isRecording = true;
+        Position cursor_ = window_.GetCursor();
+        cursor_.column_ = buffer_.GetLineAt(cursor_.row_).size();
+        EnterInsert(cursor_,action.count_->count);
+        return;
+    }
+    case ActionKind::OpenNext:{
+        InsertMode = action.kind_;
+        if(action.count_->count > 1) isRecording = true;
+        Position cursor_ = window_.GetCursor();
+        buffer_.SplitLine(cursor_.row_,buffer_.GetLineAt(cursor_.row_).size());
+        cursor_.column_ = 0;
+        cursor_.row_ = cursor_.row_+1;
+        EnterInsert(cursor_,action.count_->count);
+        return;
+    }
+    case ActionKind::OpenPrev:{
+        InsertMode = action.kind_;
+        if(action.count_->count > 1) isRecording = true;
+        Position cursor_ = window_.GetCursor();
+        buffer_.SplitLine(cursor_.row_,0);
+        cursor_.column_ = 0;
+        EnterInsert(cursor_,action.count_->count);
         return;
     }
     case ActionKind::EnterCommandLine:
@@ -109,13 +149,21 @@ void Editor::Execute(const EditorAction& action) {
     case ActionKind::Delete:{
         Position cursor_ = window_.GetCursor();
         for(size_t i = 0; i < action.count_->count;i++){
-            buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
+            buffer_.EraseCharacter(cursor_.row_, cursor_.column_ - 1);
         }
         window_.SetCursor(buffer_,cursor_,false);
         return;
     }
     //删除当前字符
-        
+    case ActionKind::DeleteBefore:{
+        Position cursor_ = window_.GetCursor();
+        if(cursor_.column_ == 0) return;
+        for(size_t i = 0; i < action.count_->count && window_.GetCursor().column_ > 0;i++){
+            buffer_.EraseCharacter(cursor_.row_, window_.GetCursor().column_ - 1);
+            window_.ApplyMotion(buffer_,Motion::Left,1);
+        }
+        return;
+    }
     case ActionKind::JumpToLineStart:
         if(action.count_->count > 0) {
             Position new_cursor{action.count_->count - 1,window_.GetCursor().column_, };
@@ -147,12 +195,49 @@ void Editor::Execute(const EditorAction& action) {
         window_.ApplyMotion(buffer_,Motion::Right,buffer_.GetLineAt(cursor_.row_).size());
         return;
     }
-        
+    case ActionKind::JumpToRealStart:{
+        Position cursor_ = window_.GetCursor();
+        size_t realstart = buffer_.Find(cursor_.row_,0,false);
+        window_.SetCursor(buffer_,Position{cursor_.row_,realstart},false);
+    }
     }
     
     
 }
-
+void Editor::MultipleExecute(size_t count){
+    //用于反复执行动作
+    if(!recorded_action.empty()){
+    isReplaying = true;
+    if(InsertMode == ActionKind::OpenNext||InsertMode == ActionKind::OpenPrev){
+        for(size_t i = 0; i + 2 < count;i++){
+            Execute(EditorAction{ActionKind::OpenNext});
+            for(size_t i = 0; i < recorded_action.size();i++){
+                HandleInsert(recorded_action[i]);
+            }
+        }
+        Execute(EditorAction{ActionKind::OpenNext});
+        for(size_t i = 0; i + 1< recorded_action.size();i++){
+            HandleInsert(recorded_action[i]);
+        }
+    }
+    else{
+        for(size_t i = 0; i + 2 < count;i++){
+            for(size_t i = 0; i < recorded_action.size();i++){
+                HandleInsert(recorded_action[i]);
+            }
+        }
+        for(size_t i = 0; i + 1 < recorded_action.size();i++){
+            HandleInsert(recorded_action[i]);
+        }
+    }
+    isReplaying = false;
+    HandleInsert(recorded_action[recorded_action.size() - 1]);
+    }
+    
+    Replay_Count = 1;
+    isRecording = false;
+    recorded_action = {};
+};
 //Insert模式下Editor对于KeyEvent的处理.
 void Editor::HandleInsert(KeyEvent key) {
     //在该函数中你需要同时照顾Buffer和Window的状态
@@ -163,13 +248,15 @@ void Editor::HandleInsert(KeyEvent key) {
     //修改内容后记得同步Window中的光标,插入模式允许光标位于line.size()
     Position cursor_ = window_.GetCursor();
     if(key.code_ == KeyCode::Escape) {
+        if(isRecording) MultipleExecute(Replay_Count);
         LeaveInsert();
         return;
     }
+    if(Replay_Count > 1 && !isReplaying) recorded_action.push_back(key);
     if(key.code_ == KeyCode::Enter){
         buffer_.SplitLine(cursor_.row_, cursor_.column_);
         Position newcursor_{cursor_.row_ + 1, 0uLL};
-        window_.SetCursor(buffer_, newcursor_,true);
+        window_.SetCursor(buffer_, newcursor_, true, !isReplaying);
         return;
     }
     if(key.code_ == KeyCode::Backspace){
@@ -177,7 +264,7 @@ void Editor::HandleInsert(KeyEvent key) {
             if(cursor_.row_ == 0) return;
             else{
                 Position newcurosr_{cursor_.row_ - 1, buffer_.GetLineAt(cursor_.row_ - 1).size()};
-                window_.SetCursor(buffer_, newcurosr_,true);
+                window_.SetCursor(buffer_, newcurosr_,true,!isReplaying);
                 buffer_.JoinLine(cursor_.row_-1);
                 return;
             }
@@ -185,21 +272,23 @@ void Editor::HandleInsert(KeyEvent key) {
         else {
             buffer_.EraseCharacter(cursor_.row_, cursor_.column_ - 1);
             Position newcurosr_{cursor_.row_, cursor_.column_ - 1};
-            window_.SetCursor(buffer_, newcurosr_, true);
+            window_.SetCursor(buffer_, newcurosr_, true, !isReplaying);
             return;
         }
     }
     if(IsPrintable(key.value_)||key.value_ == '\t'){
         Position newcursor_{cursor_.row_, cursor_.column_ + 1};
         buffer_.InsertCharacter(cursor_.row_, cursor_.column_ , key.value_);
-        window_.SetCursor(buffer_, newcursor_, true);
+        window_.SetCursor(buffer_, newcursor_, true, !isReplaying);
     }
 }
-void Editor::EnterInsert(Position position) {
+void Editor::EnterInsert(Position position,size_t count) {
     //切换到Insert模式,设置插入位置并清除旧提示;允许光标停在行尾字符之后
+    //若有count则记录count
     mode_ = Mode::Insert;
     message_ = "";
-    window_.SetCursor(buffer_, position,true);
+    window_.SetCursor(buffer_, position,true, !isReplaying);
+    if(count > 1) Replay_Count = count;
 }
 
 void Editor::LeaveInsert() {

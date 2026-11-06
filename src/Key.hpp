@@ -50,6 +50,7 @@ struct KeyEvent {
     }
 };
 
+
 } // namespace sjtu
 
 #endif // MINIVIM_KEY_HPP
