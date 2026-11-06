@@ -268,6 +268,13 @@ void Editor::HandleInsert(KeyEvent key) {
         window_.SetCursor(buffer_, newcursor_, true, !isReplaying);
         return;
     }
+    if(key.code_ == KeyCode::Delete){
+        if(cursor_.column_ < buffer_.GetLineAt(cursor_.row_).size()) {
+            buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
+            window_.SetCursor(buffer_, cursor_, true, !isReplaying);
+        }
+        return;
+    }
     if(key.code_ == KeyCode::Backspace){
         if(cursor_.column_ == 0){
             if(cursor_.row_ == 0) return;
@@ -278,19 +285,10 @@ void Editor::HandleInsert(KeyEvent key) {
                 return;
             }
         }
-        if(key.code_ == KeyCode::Delete){
-            if(cursor_.column_ < buffer_.GetLineAt(cursor_.row_).size()) {
-                buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
-                window_.SetCursor(buffer_, cursor_, true, !isReplaying);
-            }
-            return;
-        }
-        else {
-            buffer_.EraseCharacter(cursor_.row_, cursor_.column_ - 1);
-            Position newcurosr_{cursor_.row_, cursor_.column_ - 1};
-            window_.SetCursor(buffer_, newcurosr_, true, !isReplaying);
-            return;
-        }
+        buffer_.EraseCharacter(cursor_.row_, cursor_.column_ - 1);
+        Position newcurosr_{cursor_.row_, cursor_.column_ - 1};
+        window_.SetCursor(buffer_, newcurosr_, true, !isReplaying);
+        return;
     }
     if(IsPrintable(key.value_)||key.value_ == '\t'){
         Position newcursor_{cursor_.row_, cursor_.column_ + 1};
