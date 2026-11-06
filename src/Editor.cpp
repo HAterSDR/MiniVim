@@ -197,7 +197,9 @@ void Editor::Execute(const EditorAction& action) {
             return;
         }
         if(action.count_->count > 0) window_.ApplyMotion(buffer_,Motion::Down, action.count_->count - 1);  
-        window_.MoveToLineEnd(buffer_);
+        cursor_ = window_.GetCursor();
+        window_.ApplyMotion(buffer_,Motion::Right,
+                            buffer_.GetLineAt(cursor_.row_).size());
         return;
     }
     case ActionKind::JumpToRealStart:{
