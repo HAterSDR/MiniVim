@@ -41,6 +41,15 @@ void Window::ApplyMotion(const Buffer& buffer, Motion motion,size_t count) {
     EnsureCursorVisible(buffer);
 }
 
+void Window::MoveToLineEnd(const Buffer& buffer) {
+    cursor_.column_ = buffer.GetLineAt(cursor_.row_).empty()
+        ? 0
+        : buffer.GetLineAt(cursor_.row_).size() - 1;
+    desired_column_ = BufferColumnToRenderColumn(
+        buffer.GetLineAt(cursor_.row_), buffer.GetLineAt(cursor_.row_).size());
+    EnsureCursorVisible(buffer);
+}
+
 void Window::EnsureCursorVisible(const Buffer& buffer) {
     //1. 光标高于或低于可见区域时,调整top_,使光标刚好进入区域
     //2. 把光标的字符下标换算成显示列,再用相同思路调整left_

@@ -108,7 +108,7 @@ void Editor::Execute(const EditorAction& action) {
         InsertMode = action.kind_;
         if(action.count_->count > 1) isRecording = true;
         Position cursor_ = window_.GetCursor();
-        cursor_.column_ = 0;
+        cursor_.column_ = buffer_.Find(cursor_.row_, 0, false);
         EnterInsert(cursor_,action.count_->count);
         return;
     }
@@ -149,7 +149,8 @@ void Editor::Execute(const EditorAction& action) {
     case ActionKind::Delete:{
         Position cursor_ = window_.GetCursor();
         for(size_t i = 0; i < action.count_->count;i++){
-            buffer_.EraseCharacter(cursor_.row_, cursor_.column_ - 1);
+            if(cursor_.column_ >= buffer_.GetLineAt(cursor_.row_).size()) break;
+            buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
         }
         window_.SetCursor(buffer_,cursor_,false);
         return;
@@ -165,21 +166,25 @@ void Editor::Execute(const EditorAction& action) {
         return;
     }
     case ActionKind::JumpToLineStart:
-        if(action.count_->count > 0) {
-            Position new_cursor{action.count_->count - 1,window_.GetCursor().column_, };
-            window_.SetCursor(buffer_, new_cursor,false);
-            return;
+    case ActionKind::JumpToLineEnd:{
+        Position new_cursor = window_.GetCursor();
+        if(action.kind_ == ActionKind::JumpToLineStart) {
+            new_cursor.row_ = action.count_->count > 0
+                ? action.count_->count - 1
+                : 0;
+        } else if(action.count_->count > 0) {
+            new_cursor.row_ = action.count_->count - 1;
+        } else {
+            new_cursor.row_ = buffer_.GetLineCount() - 1;
         }
-        window_.ApplyMotion(buffer_,Motion::Up,buffer_.GetLineCount());
+        window_.SetCursor(buffer_, new_cursor, false);
+        const auto& line = buffer_.GetLineAt(window_.GetCursor().row_);
+        size_t column = buffer_.Find(window_.GetCursor().row_, 0, false);
+        if(line.empty()) column = 0;
+        else if(column == line.size()) column = line.size() - 1;
+        window_.SetCursor(buffer_, Position{window_.GetCursor().row_, column}, false);
         return;
-    case ActionKind::JumpToLineEnd:
-        if(action.count_->count > 0) {
-            Position new_cursor{action.count_->count - 1,window_.GetCursor().column_};
-            window_.SetCursor(buffer_, new_cursor,false);
-            return;
-        }
-        window_.ApplyMotion(buffer_,Motion::Down,buffer_.GetLineCount());
-        return;
+    }
     case ActionKind::JumpToColStart:{
         Position cursor_ = window_.GetCursor();
         window_.ApplyMotion(buffer_,Motion::Left,buffer_.GetLineAt(cursor_.row_).size());
@@ -192,12 +197,16 @@ void Editor::Execute(const EditorAction& action) {
             return;
         }
         if(action.count_->count > 0) window_.ApplyMotion(buffer_,Motion::Down, action.count_->count - 1);  
-        window_.ApplyMotion(buffer_,Motion::Right,buffer_.GetLineAt(cursor_.row_).size());
+        window_.MoveToLineEnd(buffer_);
         return;
     }
     case ActionKind::JumpToRealStart:{
         Position cursor_ = window_.GetCursor();
         size_t realstart = buffer_.Find(cursor_.row_,0,false);
+        if(realstart == buffer_.GetLineAt(cursor_.row_).size() &&
+           !buffer_.GetLineAt(cursor_.row_).empty()) {
+            realstart--;
+        }
         window_.SetCursor(buffer_,Position{cursor_.row_,realstart},false);
     }
     }
@@ -206,21 +215,20 @@ void Editor::Execute(const EditorAction& action) {
 }
 void Editor::MultipleExecute(size_t count){
     //用于反复执行动作
-    if(!recorded_action.empty()){
     isReplaying = true;
     if(InsertMode == ActionKind::OpenNext||InsertMode == ActionKind::OpenPrev){
         for(size_t i = 0; i + 2 < count;i++){
-            Execute(EditorAction{ActionKind::OpenNext});
+            Execute(EditorAction{InsertMode, std::nullopt, Count{1}});
             for(size_t i = 0; i < recorded_action.size();i++){
                 HandleInsert(recorded_action[i]);
             }
         }
-        Execute(EditorAction{ActionKind::OpenNext});
+        Execute(EditorAction{InsertMode, std::nullopt, Count{1}});
         for(size_t i = 0; i + 1< recorded_action.size();i++){
             HandleInsert(recorded_action[i]);
         }
     }
-    else{
+    else if(!recorded_action.empty()){
         for(size_t i = 0; i + 2 < count;i++){
             for(size_t i = 0; i < recorded_action.size();i++){
                 HandleInsert(recorded_action[i]);
@@ -231,7 +239,8 @@ void Editor::MultipleExecute(size_t count){
         }
     }
     isReplaying = false;
-    HandleInsert(recorded_action[recorded_action.size() - 1]);
+    if(!recorded_action.empty()) {
+        HandleInsert(recorded_action[recorded_action.size() - 1]);
     }
     
     Replay_Count = 1;
@@ -268,6 +277,13 @@ void Editor::HandleInsert(KeyEvent key) {
                 buffer_.JoinLine(cursor_.row_-1);
                 return;
             }
+        }
+        if(key.code_ == KeyCode::Delete){
+            if(cursor_.column_ < buffer_.GetLineAt(cursor_.row_).size()) {
+                buffer_.EraseCharacter(cursor_.row_, cursor_.column_);
+                window_.SetCursor(buffer_, cursor_, true, !isReplaying);
+            }
+            return;
         }
         else {
             buffer_.EraseCharacter(cursor_.row_, cursor_.column_ - 1);

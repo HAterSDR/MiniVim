@@ -18,6 +18,7 @@ public:
     void Resize(ScreenSize terminal_size);
 
     void ApplyMotion(const Buffer& buffer, Motion motion,size_t count = 1);
+    void MoveToLineEnd(const Buffer& buffer);
     void EnsureCursorVisible(const Buffer& buffer);
 
     //allow_line_end为true时允许停在最后一个字符之后,供插入模式使用

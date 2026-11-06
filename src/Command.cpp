@@ -17,17 +17,27 @@ EditorAction NormalModeParser::Feed(KeyEvent key) {
         if(pending_){
             if(pending_.value()=='g'){
             switch(value){
-                case 'g':return GenerateCommand(ActionKind::JumpToLineStart);ResetState();break;
+                case 'g':{
+                    auto action = GenerateCommand(ActionKind::JumpToLineStart,
+                                                   pending_count == 0 ? 1 : pending_count);
+                    ResetState();
+                    return action;
+                }
                 default:break;
             }
         }
         }
         if(value>='0' && value<='9'){
             size_t digit = value - '0';
-            if(digit == 0 && pending_count == 0) return GenerateCommand(ActionKind::JumpToColStart);
+            if(digit == 0 && pending_count == 0){
+                auto action = GenerateCommand(ActionKind::JumpToColStart);
+                ResetState();
+                return action;
+            }
             else{
                 pending_count = pending_count*10 + digit;
                 count = pending_count;
+                if(digit == 0) return {};
             }
         };
         switch (value) {
