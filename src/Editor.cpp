@@ -109,6 +109,7 @@ void Editor::Execute(const EditorAction& action) {
         if(action.count_->count > 1) isRecording = true;
         Position cursor_ = window_.GetCursor();
         cursor_.column_ = buffer_.Find(cursor_.row_, 0, false);
+        if(cursor_.column_ == buffer_.GetLineAt(cursor_.row_).size()) cursor_.row_ = 0;
         EnterInsert(cursor_,action.count_->count);
         return;
     }
@@ -191,14 +192,16 @@ void Editor::Execute(const EditorAction& action) {
     }
         
     case ActionKind::JumpToColEnd:{
-        window_.SetDesiredColumn(SIZE_MAX);
+        
         Position cursor_ = window_.GetCursor();
         if(action.count_->count >= 2 && cursor_.row_ == buffer_.GetLineCount()-1){
+            window_.SetDesiredColumn(SIZE_MAX);
             return;
         }
         if(action.count_->count > 0) window_.ApplyMotion(buffer_,Motion::Down, action.count_->count - 1);  
         cursor_ = window_.GetCursor();
         window_.ApplyMotion(buffer_,Motion::Right,buffer_.GetLineAt(cursor_.row_).size());
+        window_.SetDesiredColumn(SIZE_MAX);
         return;
     }
     case ActionKind::JumpToRealStart:{

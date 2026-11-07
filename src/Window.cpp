@@ -100,7 +100,14 @@ void Window::NotWhitespace(const Buffer& buffer){
 void Window::MoveLeft(const Buffer& buffer, std::size_t count) {
     //向左移动count个字符,最多到行首,并更新目标显示列
     cursor_.column_ = (count > cursor_.column_)?0:cursor_.column_ - count;
-    desired_column_ = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_);
+    const std::string& line = buffer.GetLineAt(cursor_.row_);
+    size_t start_col = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_);
+    if(line[cursor_.column_]=='\t'){
+        desired_column_ = NextScreenColumn(start_col,'\t')-1;
+    }
+    else{
+        desired_column_ = start_col;
+    }
 }
 
 void Window::MoveRight(const Buffer& buffer, std::size_t count) {
@@ -111,7 +118,13 @@ void Window::MoveRight(const Buffer& buffer, std::size_t count) {
         size_t max_col = line.size() - 1;
         cursor_.column_ = std::min(max_col, cursor_.column_ + count);
     }
-    desired_column_ = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_);
+    size_t start_col = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_);
+    if(line[cursor_.column_]=='\t'){
+        desired_column_ = NextScreenColumn(start_col,'\t')-1;
+    }
+    else{
+        desired_column_ = start_col;
+    }
 }
 
 
@@ -147,5 +160,8 @@ void Window::MoveDown(const Buffer& buffer, std::size_t count) {
 void Window::SetDesiredColumn(size_t col) { 
     desired_column_ = col; 
 }
+size_t Window::GetDesiredColumn() const{
+    return desired_column_;
+};
 
 } // namespace sjtu
