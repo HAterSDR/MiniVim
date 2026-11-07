@@ -52,7 +52,14 @@ inline size_t BufferColumnToRenderColumn(std::string_view line, size_t buffer_co
 
     return column;
 }
-
+inline size_t GetCursorVisualCol(std::string_view line, size_t buffer_column){
+    if (line.empty()) return 0;
+    size_t start_col = BufferColumnToRenderColumn(line, buffer_column);
+    if (buffer_column < line.size() && line[buffer_column] == '\t') {
+        return NextScreenColumn(start_col, '\t') - 1;
+    }
+    return start_col;
+}
 } 
 
 #endif // MINIVIM_TEXT_LAYOUT_HPP

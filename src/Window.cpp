@@ -50,7 +50,7 @@ void Window::EnsureCursorVisible(const Buffer& buffer) {
     if(cursor_.row_ >= viewport_.top_ + viewport_.rows_){
         viewport_.top_ = cursor_.row_ - viewport_.rows_ + 1;
     }
-    size_t ScreenCol = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_) , cursor_.column_);
+    size_t ScreenCol = GetCursorVisualCol(buffer.GetLineAt(cursor_.row_) , cursor_.column_);
     if(ScreenCol < viewport_.left_){
         viewport_.left_ =  ScreenCol;
     }
@@ -86,7 +86,7 @@ void Window::SetCursor(const Buffer& buffer, Position position, bool allow_line_
     }
     if(position.column_ > max_col) cursor_.column_ = max_col;
     else cursor_.column_ = position.column_;
-    desired_column_ = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_); 
+    desired_column_ = GetCursorVisualCol(buffer.GetLineAt(cursor_.row_), cursor_.column_); 
     if(auto_scrolling) EnsureCursorVisible(buffer);
 }
 void Window::NotWhitespace(const Buffer& buffer){
@@ -101,7 +101,7 @@ void Window::MoveLeft(const Buffer& buffer, std::size_t count) {
     //向左移动count个字符,最多到行首,并更新目标显示列
     cursor_.column_ = (count > cursor_.column_)?0:cursor_.column_ - count;
     const std::string& line = buffer.GetLineAt(cursor_.row_);
-    size_t start_col = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_);
+    size_t start_col = GetCursorVisualCol(buffer.GetLineAt(cursor_.row_), cursor_.column_);
     if(line[cursor_.column_]=='\t'){
         desired_column_ = NextScreenColumn(start_col,'\t')-1;
     }
@@ -118,7 +118,7 @@ void Window::MoveRight(const Buffer& buffer, std::size_t count) {
         size_t max_col = line.size() - 1;
         cursor_.column_ = std::min(max_col, cursor_.column_ + count);
     }
-    size_t start_col = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_);
+    size_t start_col = GetCursorVisualCol(buffer.GetLineAt(cursor_.row_), cursor_.column_);
     if(line[cursor_.column_]=='\t'){
         desired_column_ = NextScreenColumn(start_col,'\t')-1;
     }
@@ -137,7 +137,7 @@ void Window::MoveUp(const Buffer& buffer, std::size_t count) {
         cursor_.column_ = 0;
         return;
     }
-    size_t Desired_Col = std::min(RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_), buffer.GetLineAt(_row).size() - 1);
+    size_t Desired_Col = std::min(GetCursorVisualCol(buffer.GetLineAt(_row), desired_column_), buffer.GetLineAt(_row).size() - 1);
      
     cursor_.row_ = _row;
     cursor_.column_ = Desired_Col;
@@ -153,7 +153,7 @@ void Window::MoveDown(const Buffer& buffer, std::size_t count) {
         cursor_.column_ = 0;
         return;
     }
-    size_t Desired_Col = std::min(RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_),buffer.GetLineAt(_row).size() - 1); 
+    size_t Desired_Col = std::min(GetCursorVisualCol(buffer.GetLineAt(_row), desired_column_),buffer.GetLineAt(_row).size() - 1); 
     cursor_.row_ = _row;
     cursor_.column_ = Desired_Col;
 }

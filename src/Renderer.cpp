@@ -72,7 +72,7 @@ std::string Renderer::Render(const Buffer& buffer, const Window& window, const R
     }else{
         const Position& cursor_ = window.GetCursor();
         cursor_row = cursor_.row_ - viewport.top_ + 1;
-        cursor_column = BufferColumnToRenderColumn(buffer.GetLineAt(cursor_.row_), cursor_.column_) - viewport.left_ + 1; 
+        cursor_column = GetCursorVisualCol(buffer.GetLineAt(cursor_.row_), cursor_.column_) - viewport.left_ + 1; 
     }
     //计算cursor_row和cursor_column即可    
 
