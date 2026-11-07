@@ -25,6 +25,7 @@ public:
     const Position& GetCursor() const ;
     const Viewport& GetViewport() const ;
     void NotWhitespace(const Buffer& buffer);
+    void SetDesiredColumn(size_t col);
 
 private:
     void MoveLeft(const Buffer& buffer, size_t count);

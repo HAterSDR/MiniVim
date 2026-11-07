@@ -102,12 +102,12 @@ size_t Buffer::Find(std::size_t row,std::size_t column, bool IsBlank){
     size_t first = column;
     if(IsBlank){
         for(;first < GetLineAt(row).size();first++){
-            if(std::isspace(GetLineAt(row)[first])) break;
+            if(GetLineAt(row)[first] == ' ' || GetLineAt(row)[first] == '\t') break;
         }
     }
     else{
         for(;first < GetLineAt(row).size();first++){
-            if(!std::isspace(GetLineAt(row)[first])) break;
+            if(GetLineAt(row)[first] != ' ' && GetLineAt(row)[first] != '\t') break;
         }
     }
     return first;

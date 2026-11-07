@@ -169,37 +169,36 @@ void Editor::Execute(const EditorAction& action) {
     case ActionKind::JumpToLineEnd:{
         Position new_cursor = window_.GetCursor();
         if(action.kind_ == ActionKind::JumpToLineStart) {
-            new_cursor.row_ = action.count_->count > 0
-                ? action.count_->count - 1
-                : 0;
-        } else if(action.count_->count > 0) {
-            new_cursor.row_ = action.count_->count - 1;
-        } else {
-            new_cursor.row_ = buffer_.GetLineCount() - 1;
+            new_cursor.row_ = action.count_->count > 0 ? action.count_->count - 1:0;
         }
-        window_.SetCursor(buffer_, new_cursor, false);
-        const auto& line = buffer_.GetLineAt(window_.GetCursor().row_);
-        size_t column = buffer_.Find(window_.GetCursor().row_, 0, false);
-        if(line.empty()) column = 0;
-        else if(column == line.size()) column = line.size() - 1;
-        window_.SetCursor(buffer_, Position{window_.GetCursor().row_, column}, false);
+        else{
+            new_cursor.row_ = action.count_->count > 0 ? action.count_->count - 1 : buffer_.GetLineCount() - 1;
+        }
+        size_t col = buffer_.Find(new_cursor.row_, 0, false);
+        if(buffer_.GetLineAt(new_cursor.row_).empty()) {
+            col = 0;
+        } else if(col == buffer_.GetLineAt(new_cursor.row_).size()) {
+            col = buffer_.GetLineAt(new_cursor.row_).size() - 1;
+        }
+        window_.SetCursor(buffer_, Position{new_cursor.row_, col}, false);
         return;
     }
     case ActionKind::JumpToColStart:{
         Position cursor_ = window_.GetCursor();
         window_.ApplyMotion(buffer_,Motion::Left,buffer_.GetLineAt(cursor_.row_).size());
+        window_.SetDesiredColumn(0);
         return;
     }
         
     case ActionKind::JumpToColEnd:{
+        window_.SetDesiredColumn(SIZE_MAX);
         Position cursor_ = window_.GetCursor();
         if(action.count_->count >= 2 && cursor_.row_ == buffer_.GetLineCount()-1){
             return;
         }
         if(action.count_->count > 0) window_.ApplyMotion(buffer_,Motion::Down, action.count_->count - 1);  
         cursor_ = window_.GetCursor();
-        window_.ApplyMotion(buffer_,Motion::Right,
-                            buffer_.GetLineAt(cursor_.row_).size());
+        window_.ApplyMotion(buffer_,Motion::Right,buffer_.GetLineAt(cursor_.row_).size());
         return;
     }
     case ActionKind::JumpToRealStart:{

@@ -24,7 +24,7 @@ void Window::ApplyMotion(const Buffer& buffer, Motion motion,size_t count) {
         }
     }
     if(motion == Motion::Right) {
-        if(cursor_.column_ < buffer.GetLineAt(cursor_.row_).size()-1){
+        if(cursor_.column_ + 1 < buffer.GetLineAt(cursor_.row_).size()){
             MoveRight(buffer,count);
         }
     }
@@ -34,7 +34,7 @@ void Window::ApplyMotion(const Buffer& buffer, Motion motion,size_t count) {
         }
     }
     if(motion == Motion::Down) {
-        if(cursor_.row_ < buffer.GetLineCount()-1){
+        if(cursor_.row_ + 1< buffer.GetLineCount()){
             MoveDown(buffer,count);
         }
     }
@@ -144,6 +144,8 @@ void Window::MoveDown(const Buffer& buffer, std::size_t count) {
     cursor_.row_ = _row;
     cursor_.column_ = Desired_Col;
 }
-
+void Window::SetDesiredColumn(size_t col) { 
+    desired_column_ = col; 
+}
 
 } // namespace sjtu
