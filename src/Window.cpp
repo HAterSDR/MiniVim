@@ -102,12 +102,7 @@ void Window::MoveLeft(const Buffer& buffer, std::size_t count) {
     cursor_.column_ = (count > cursor_.column_)?0:cursor_.column_ - count;
     const std::string& line = buffer.GetLineAt(cursor_.row_);
     size_t start_col = GetCursorVisualCol(buffer.GetLineAt(cursor_.row_), cursor_.column_);
-    if(line[cursor_.column_]=='\t'){
-        desired_column_ = NextScreenColumn(start_col,'\t')-1;
-    }
-    else{
-        desired_column_ = start_col;
-    }
+    desired_column_ = start_col;
 }
 
 void Window::MoveRight(const Buffer& buffer, std::size_t count) {
@@ -119,15 +114,9 @@ void Window::MoveRight(const Buffer& buffer, std::size_t count) {
         cursor_.column_ = std::min(max_col, cursor_.column_ + count);
     }
     size_t start_col = GetCursorVisualCol(buffer.GetLineAt(cursor_.row_), cursor_.column_);
-    if(line[cursor_.column_]=='\t'){
-        desired_column_ = NextScreenColumn(start_col,'\t')-1;
-    }
-    else{
-        desired_column_ = start_col;
-    }
+    desired_column_ = start_col;
+
 }
-
-
 void Window::MoveUp(const Buffer& buffer, std::size_t count) {
     //先算目标行,最多到第一行,再将期望的显示列换算成目标行的字符下标
     //经过短行时不要更新desired_screen_column_,这样继续移动到长行时能回到原来的列
@@ -137,8 +126,8 @@ void Window::MoveUp(const Buffer& buffer, std::size_t count) {
         cursor_.column_ = 0;
         return;
     }
-    size_t Desired_Col = std::min(GetCursorVisualCol(buffer.GetLineAt(_row), desired_column_), buffer.GetLineAt(_row).size() - 1);
-     
+    size_t target_buffer_col = RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_);
+    size_t Desired_Col = std::min(target_buffer_col, buffer.GetLineAt(_row).size() - 1);
     cursor_.row_ = _row;
     cursor_.column_ = Desired_Col;
 
@@ -153,7 +142,8 @@ void Window::MoveDown(const Buffer& buffer, std::size_t count) {
         cursor_.column_ = 0;
         return;
     }
-    size_t Desired_Col = std::min(GetCursorVisualCol(buffer.GetLineAt(_row), desired_column_),buffer.GetLineAt(_row).size() - 1); 
+    size_t target_buffer_col = RenderColumnToBufferColumn(buffer.GetLineAt(_row), desired_column_);
+    size_t Desired_Col = std::min(target_buffer_col, buffer.GetLineAt(_row).size() - 1);
     cursor_.row_ = _row;
     cursor_.column_ = Desired_Col;
 }

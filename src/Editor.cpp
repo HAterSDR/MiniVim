@@ -109,7 +109,7 @@ void Editor::Execute(const EditorAction& action) {
         if(action.count_->count > 1) isRecording = true;
         Position cursor_ = window_.GetCursor();
         cursor_.column_ = buffer_.Find(cursor_.row_, 0, false);
-        if(cursor_.column_ == buffer_.GetLineAt(cursor_.row_).size()) cursor_.row_ = 0;
+        if(cursor_.column_ == buffer_.GetLineAt(cursor_.row_).size()) cursor_.column_ = 0;
         EnterInsert(cursor_,action.count_->count);
         return;
     }
@@ -219,37 +219,30 @@ void Editor::Execute(const EditorAction& action) {
 }
 void Editor::MultipleExecute(size_t count){
     //用于反复执行动作
+    if (recorded_action.empty()) {
+        isReplaying = true;
+        Replay_Count = 1;
+        isRecording = false;
+        recorded_action.clear();
+        return;
+    }
     isReplaying = true;
     if(InsertMode == ActionKind::OpenNext||InsertMode == ActionKind::OpenPrev){
-        for(size_t i = 0; i + 2 < count;i++){
+        for(size_t i = 1; i < count; i++){
             Execute(EditorAction{InsertMode, std::nullopt, Count{1}});
-            for(size_t i = 0; i < recorded_action.size();i++){
-                HandleInsert(recorded_action[i]);
-            }
-        }
-        Execute(EditorAction{InsertMode, std::nullopt, Count{1}});
-        for(size_t i = 0; i + 1< recorded_action.size();i++){
-            HandleInsert(recorded_action[i]);
+            for(auto k : recorded_action) HandleInsert(k);
         }
     }
-    else if(!recorded_action.empty()){
-        for(size_t i = 0; i + 2 < count;i++){
-            for(size_t i = 0; i < recorded_action.size();i++){
-                HandleInsert(recorded_action[i]);
-            }
-        }
-        for(size_t i = 0; i + 1 < recorded_action.size();i++){
-            HandleInsert(recorded_action[i]);
+    else {
+        for(size_t i = 1; i < count; i++){
+            for(auto k : recorded_action) HandleInsert(k);
         }
     }
     isReplaying = false;
-    if(!recorded_action.empty()) {
-        HandleInsert(recorded_action[recorded_action.size() - 1]);
-    }
-    
+    window_.EnsureCursorVisible(buffer_);
     Replay_Count = 1;
     isRecording = false;
-    recorded_action = {};
+    recorded_action.clear();
 };
 //Insert模式下Editor对于KeyEvent的处理.
 void Editor::HandleInsert(KeyEvent key) {
@@ -265,7 +258,7 @@ void Editor::HandleInsert(KeyEvent key) {
         LeaveInsert();
         return;
     }
-    if(Replay_Count > 1 && !isReplaying) recorded_action.push_back(key);
+    if(isRecording && !isReplaying) recorded_action.push_back(key);
     if(key.code_ == KeyCode::Enter){
         buffer_.SplitLine(cursor_.row_, cursor_.column_);
         Position newcursor_{cursor_.row_ + 1, 0uLL};
